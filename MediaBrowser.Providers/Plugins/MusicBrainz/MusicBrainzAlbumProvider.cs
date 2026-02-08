@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -13,6 +14,7 @@ using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Providers;
 using MediaBrowser.Providers.Music;
 using MediaBrowser.Providers.Plugins.MusicBrainz.Configuration;
+using MediaBrowser.Providers.Plugins.MusicBrainz.Helpers;
 using MetaBrainz.MusicBrainz;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
 using MetaBrainz.MusicBrainz.Interfaces.Searches;
@@ -49,24 +51,7 @@ public class MusicBrainzAlbumProvider : IRemoteMetadataProvider<MusicAlbum, Albu
     private void ReloadConfig(object? sender, BasePluginConfiguration e)
     {
         var configuration = (PluginConfiguration)e;
-        if (Uri.TryCreate(configuration.Server, UriKind.Absolute, out var server))
-        {
-            Query.DefaultServer = server.DnsSafeHost;
-            Query.DefaultPort = server.Port;
-            Query.DefaultUrlScheme = server.Scheme;
-        }
-        else
-        {
-            // Fallback to official server
-            _logger.LogWarning("Invalid MusicBrainz server specified, falling back to official server");
-            var defaultServer = new Uri(PluginConfiguration.DefaultServer);
-            Query.DefaultServer = defaultServer.Host;
-            Query.DefaultPort = defaultServer.Port;
-            Query.DefaultUrlScheme = defaultServer.Scheme;
-        }
-
-        Query.DelayBetweenRequests = configuration.RateLimit;
-        _musicBrainzQuery = new Query();
+        _musicBrainzQuery = QueryHelper.Create(configuration, _logger);
     }
 
     /// <inheritdoc />

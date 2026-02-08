@@ -12,9 +12,11 @@ using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Providers;
 using MediaBrowser.Providers.Music;
 using MediaBrowser.Providers.Plugins.MusicBrainz.Configuration;
+using MediaBrowser.Providers.Plugins.MusicBrainz.Helpers;
 using MetaBrainz.MusicBrainz;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
 using MetaBrainz.MusicBrainz.Interfaces.Searches;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace MediaBrowser.Providers.Plugins.MusicBrainz;
@@ -34,7 +36,7 @@ public class MusicBrainzArtistProvider : IRemoteMetadataProvider<MusicArtist, Ar
     public MusicBrainzArtistProvider(ILogger<MusicBrainzArtistProvider> logger)
     {
         _logger = logger;
-        _musicBrainzQuery = new Query();
+        _musicBrainzQuery = QueryHelper.Create(MusicBrainz.Plugin.Instance!.Configuration, _logger);
         ReloadConfig(null, MusicBrainz.Plugin.Instance!.Configuration);
         MusicBrainz.Plugin.Instance!.ConfigurationChanged += ReloadConfig;
     }
@@ -45,24 +47,7 @@ public class MusicBrainzArtistProvider : IRemoteMetadataProvider<MusicArtist, Ar
     private void ReloadConfig(object? sender, BasePluginConfiguration e)
     {
         var configuration = (PluginConfiguration)e;
-        if (Uri.TryCreate(configuration.Server, UriKind.Absolute, out var server))
-        {
-            Query.DefaultServer = server.DnsSafeHost;
-            Query.DefaultPort = server.Port;
-            Query.DefaultUrlScheme = server.Scheme;
-        }
-        else
-        {
-            // Fallback to official server
-            _logger.LogWarning("Invalid MusicBrainz server specified, falling back to official server");
-            var defaultServer = new Uri(PluginConfiguration.DefaultServer);
-            Query.DefaultServer = defaultServer.Host;
-            Query.DefaultPort = defaultServer.Port;
-            Query.DefaultUrlScheme = defaultServer.Scheme;
-        }
-
-        Query.DelayBetweenRequests = configuration.RateLimit;
-        _musicBrainzQuery = new Query();
+        _musicBrainzQuery = QueryHelper.Create(configuration, _logger);
     }
 
     /// <inheritdoc />
