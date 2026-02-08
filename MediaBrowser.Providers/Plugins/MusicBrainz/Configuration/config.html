@@ -21,6 +21,14 @@
                         <input is="emby-checkbox" type="checkbox" id="replaceArtistName" />
                         <span>When an artist is found during a metadata search, replace the artist name with the value on the server.</span>
                     </label>
+                    <label class="checkboxContainer">
+                        <input is="emby-checkbox" type="checkbox" id="useProxy" />
+                        <span>Send requests throght proxy.</span>
+                    </label>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="proxyUrl" required label="ProxyUrl" />
+                        <div class="fieldDescription">Proxy url e.g. schema://address:port</div>
+                    </div>
                     <br />
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block"><span>Save</span></button>
@@ -51,7 +59,23 @@
                             cancelable: false
                         }));
 
+                        var useProxy = document.querySelector('#useProxy');
+                        useProxy.checked = config.UseProxy;
+                        useProxy.dispatchEvent(new Event('change', {
+                            bubbles: true,
+                            cancelable: false
+                        }));
+
+                        var proxyUrl = document.querySelector('#proxyUrl');
+                        proxyUrl.value = config.ProxyUrl;
+                        useProxy.dispatchEvent(new Event('change', {
+                            bubbles: true,
+                            cancelable: false
+                        }));
+
                         document.querySelector('#replaceArtistName').checked = config.ReplaceArtistName;
+                        document.querySelector('#useProxy').checked = config.UseProxy;
+                        document.querySelector('#proxyUrl').value = config.ProxyUrl;
 
                         Dashboard.hideLoadingMsg();
                     });
@@ -65,6 +89,8 @@
                         config.Server = document.querySelector('#server').value;
                         config.RateLimit = document.querySelector('#rateLimit').value;
                         config.ReplaceArtistName = document.querySelector('#replaceArtistName').checked;
+                        config.UseProxy = document.querySelector('#useProxy').checked;
+                        config.ProxyUrl = document.querySelector('#proxyUrl').value;
 
                         ApiClient.updatePluginConfiguration(MusicBrainzPluginConfig.uniquePluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
                     });

@@ -54,4 +54,14 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets a value indicating whether to replace the artist name.
     /// </summary>
     public bool ReplaceArtistName { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to use proxy.
+    /// </summary>
+    public bool UseProxy { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to Proxy url e.g. schema://address:port .
+    /// </summary>
+    public string? ProxyUrl { get; set; }
 }
