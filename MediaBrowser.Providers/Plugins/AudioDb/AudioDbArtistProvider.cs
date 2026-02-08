@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Jellyfin.Extensions.Json;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Extensions;
-using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Providers;
@@ -21,24 +20,25 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Providers;
 using MediaBrowser.Providers.Music;
+using MediaBrowser.Providers.Plugins.AudioDb.Helpers;
 
 namespace MediaBrowser.Providers.Plugins.AudioDb
 {
-    public class AudioDbArtistProvider : IRemoteMetadataProvider<MusicArtist, ArtistInfo>, IHasOrder
+    public class AudioDbArtistProvider : IRemoteMetadataProvider<MusicArtist, ArtistInfo>, IHasOrder, IDisposable
     {
         private const string ApiKey = "195003";
         public const string BaseUrl = "https://www.theaudiodb.com/api/v1/json/" + ApiKey;
-
+        private readonly HttpClient _httpClient;
         private readonly IServerConfigurationManager _config;
         private readonly IFileSystem _fileSystem;
-        private readonly IHttpClientFactory _httpClientFactory;
+        
         private readonly JsonSerializerOptions _jsonOptions = JsonDefaults.Options;
 
         public AudioDbArtistProvider(IServerConfigurationManager config, IFileSystem fileSystem, IHttpClientFactory httpClientFactory)
         {
             _config = config;
             _fileSystem = fileSystem;
-            _httpClientFactory = httpClientFactory;
+            _httpClient = QueryHelper.CreateClient(AudioDb.Plugin.Instance!.Configuration, httpClientFactory);
             Current = this;
         }
 
@@ -152,7 +152,7 @@ namespace MediaBrowser.Providers.Plugins.AudioDb
 
             var url = BaseUrl + "/artist-mb.php?i=" + musicBrainzId;
 
-            using var response = await _httpClientFactory.CreateClient(NamedClient.Default).GetAsync(url, cancellationToken).ConfigureAwait(false);
+            using var response = await _httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             var path = GetArtistInfoPath(_config.ApplicationPaths, musicBrainzId);
             Directory.CreateDirectory(Path.GetDirectoryName(path));
@@ -163,6 +163,24 @@ namespace MediaBrowser.Providers.Plugins.AudioDb
             await using (xmlFileStream.ConfigureAwait(false))
             {
                 await response.Content.CopyToAsync(xmlFileStream, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Dispose all resources.
+        /// </summary>
+        /// <param name="disposing">Whether to dispose.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _httpClient.Dispose();
             }
         }
 
