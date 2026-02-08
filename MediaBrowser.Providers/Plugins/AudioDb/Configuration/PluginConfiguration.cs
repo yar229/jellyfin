@@ -7,5 +7,9 @@ namespace MediaBrowser.Providers.Plugins.AudioDb
     public class PluginConfiguration : BasePluginConfiguration
     {
         public bool ReplaceAlbumName { get; set; }
+
+        public bool UseProxy { get; set; }
+
+        public string? ProxyUrl { get; set; }
     }
 }

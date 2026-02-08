@@ -2,6 +2,7 @@
 
 #pragma warning disable CS1591
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -17,19 +18,20 @@ using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Providers;
+using MediaBrowser.Providers.Plugins.AudioDb.Helpers;
 
 namespace MediaBrowser.Providers.Plugins.AudioDb
 {
-    public class AudioDbArtistImageProvider : IRemoteImageProvider, IHasOrder
+    public class AudioDbArtistImageProvider : IRemoteImageProvider, IHasOrder, IDisposable
     {
         private readonly IServerConfigurationManager _config;
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly HttpClient _httpClient;
         private readonly JsonSerializerOptions _jsonOptions = JsonDefaults.Options;
 
         public AudioDbArtistImageProvider(IServerConfigurationManager config, IHttpClientFactory httpClientFactory)
         {
             _config = config;
-            _httpClientFactory = httpClientFactory;
+            _httpClient = QueryHelper.CreateClient(AudioDb.Plugin.Instance!.Configuration, httpClientFactory);
         }
 
         /// <inheritdoc />
@@ -144,12 +146,29 @@ namespace MediaBrowser.Providers.Plugins.AudioDb
 
         public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
-            return httpClient.GetAsync(url, cancellationToken);
+            return _httpClient.GetAsync(url, cancellationToken);
         }
 
         /// <inheritdoc />
         public bool Supports(BaseItem item)
             => item is MusicArtist;
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Dispose all resources.
+        /// </summary>
+        /// <param name="disposing">Whether to dispose.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _httpClient.Dispose();
+            }
+        }
     }
 }
